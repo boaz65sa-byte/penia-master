@@ -50,7 +50,7 @@ const Engine = (() => {
       } else {
         tg.chordId = item.chordId;
         tg.label = item.chordId;
-        const ch = IRON_7.find(c => c.id === item.chordId);
+        const ch = getChord(item.chordId);
         tg.he = ch?.he || '';
       }
       targets.push(tg);
