@@ -50,7 +50,7 @@ const SONG_LEVELS = [
     tip: '96 BPM — רק אם c17 עבר בניקיון.',
   },
   {
-    id: 's8', num: 26, name: 'אופα! — מדley מאסטר', subtitle: 'שיר יווני · גrand finales',
+    id: 's8', num: 26, name: 'אופα! — מדלי מאסטר', subtitle: 'שיר יווני · סיום',
     icon: '🎵', bpm: 70, unlock: 25, gameType: 'chord', song: true,
     chordSeq: ['D', 'Eb', 'Dm', 'Gm6', 'A7', 'C', 'F', 'G', 'Am', 'D7', 'Gm', 'A7', 'D', 'Dsus4', 'D', 'D'],
     teach: '16 אקורדים — סיום חגיגי כמו בטברנה אמיתית.',
