@@ -122,7 +122,12 @@ const MODE_LEVELS = [
 
 function matchNote(target, freq) {
   if (!freq || !target?.midi) return false;
-  const pc = Math.round(69 + 12 * Math.log2(freq / 440)) % 12;
-  const exp = ((target.midi % 12) + 12) % 12;
-  return ((pc % 12) + 12) % 12 === exp;
+  const mf = 69 + 12 * Math.log2(freq / 440);
+  const exp = target.midi;
+  for (let o = -1; o <= 2; o++) {
+    if (Math.abs(mf - (exp + o * 12)) <= 0.85) return true;
+  }
+  const pc = ((Math.round(mf) % 12) + 12) % 12;
+  const expPc = ((exp % 12) + 12) % 12;
+  return pc === expPc;
 }

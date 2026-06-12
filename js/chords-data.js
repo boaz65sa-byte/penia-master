@@ -62,6 +62,11 @@ function getChord(id) {
 
 function matchChord(chord, freq) {
   if (!freq || !chord?.tones?.length) return false;
-  const pc = Math.round(69 + 12 * Math.log2(freq / 440)) % 12;
-  return chord.tones.some(m => ((m % 12) + 12) % 12 === ((pc % 12) + 12) % 12);
+  const mf = 69 + 12 * Math.log2(freq / 440);
+  return chord.tones.some(m => {
+    for (let o = -1; o <= 2; o++) {
+      if (Math.abs(mf - (m + o * 12)) <= 0.9) return true;
+    }
+    return false;
+  });
 }

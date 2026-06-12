@@ -207,13 +207,16 @@ const UI = (() => {
     try {
       await MicInput.start(({ freq }) => {
         if (!chordDrillActive || roundScored) return;
-        if (matchChord(currentChord, freq)) {
+        if (freq) {
+          $('#chord-drill-status').textContent = `שומע: ${MicInput.freqLabel(freq)} — ${currentChord.id}?`;
+        }
+        if (freq && matchChord(currentChord, freq)) {
           roundScored = true;
           chordDrillHits++;
           $('#chord-drill-status').textContent = '✓ נשמע נכון!';
           $('#chord-drill-status').className = 'chord-drill-status ok';
         }
-      });
+      }, null, { pitchMode: true });
     } catch (e) {
       chordDrillActive = false;
       $('#chord-prep').classList.remove('hide');
@@ -372,18 +375,25 @@ const UI = (() => {
   async function startMicForGame() {
     if (inputMode !== 'mic') return;
     const gt = currentLevel.gameType || 'pick';
+    const needsPitch = gt === 'note' || gt === 'chord';
     try {
       await MicInput.start(
-        ({ dir, freq }) => {
-          if (gt === 'pick') Engine.handleInput(dir);
-          else if (gt === 'note') Engine.handleNoteHit(freq);
-          else Engine.handleChordHit(freq);
+        ({ dir, freq, hitTime }) => {
+          if (gt === 'pick') Engine.handleInput(dir, hitTime);
+          else if (gt === 'note') {
+            if (freq) $('#mic-status').textContent = '🎤 זוהה: ' + MicInput.freqLabel(freq);
+            Engine.handleNoteHit(freq, hitTime);
+          } else {
+            if (freq) $('#mic-status').textContent = '🎤 זוהה: ' + MicInput.freqLabel(freq);
+            Engine.handleChordHit(freq, hitTime);
+          }
         },
-        lvl => { $('#mic-fill').style.width = (lvl * 100) + '%'; }
+        lvl => { $('#mic-fill').style.width = (lvl * 100) + '%'; },
+        { pitchMode: needsPitch }
       );
       const msg = gt === 'pick' ? '🎤 שומע — פרטו בזמן'
-        : gt === 'note' ? '🎤 שומע — נגנו כל צליל בקו'
-        : '🎤 שומע — החזיקו אקורד ופרטו ↓';
+        : gt === 'note' ? '🎤 שומע — צליל אחד, סריג ברור, ליד הקו'
+        : '🎤 שומע — החזיקו אקורד, פרטו ↓ ליד הקו';
       $('#mic-status').textContent = msg;
     } catch (e) {
       inputMode = 'touch';
