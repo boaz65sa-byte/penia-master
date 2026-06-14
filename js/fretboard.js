@@ -80,41 +80,65 @@ const Fretboard = (() => {
       class: 'fb-svg real-fretboard fb-8str' + (compact ? ' fb-compact' : ''),
     }, container);
 
+    const defs = el('defs', {}, svg);
+    const wood = el('linearGradient', { id: 'fb-wood', x1: '0', y1: '0', x2: '1', y2: '1' }, defs);
+    el('stop', { offset: '0%', 'stop-color': '#3d2514' }, wood);
+    el('stop', { offset: '40%', 'stop-color': '#6b4428' }, wood);
+    el('stop', { offset: '70%', 'stop-color': '#a0724a' }, wood);
+    el('stop', { offset: '100%', 'stop-color': '#4a3020' }, wood);
+    const pearl = el('radialGradient', { id: 'fb-pearl', cx: '35%', cy: '30%', r: '65%' }, defs);
+    el('stop', { offset: '0%', 'stop-color': '#fff8e8' }, pearl);
+    el('stop', { offset: '45%', 'stop-color': '#e8c868' }, pearl);
+    el('stop', { offset: '100%', 'stop-color': '#a07828' }, pearl);
+    const fretG = el('linearGradient', { id: 'fb-fret', x1: '0', y1: '0', x2: '0', y2: '1' }, defs);
+    el('stop', { offset: '0%', 'stop-color': '#707880' }, fretG);
+    el('stop', { offset: '50%', 'stop-color': '#f0f2f5' }, fretG);
+    el('stop', { offset: '100%', 'stop-color': '#606870' }, fretG);
+
     el('rect', {
       x: L.padL - 10, y: L.padT - 6,
       width: L.courseW * PAIRS + 20, height: L.frH * NUM_FRETS + 12,
-      fill: 'rgba(42,24,16,0.92)', rx: 6,
-      stroke: 'rgba(232,217,176,0.3)', 'stroke-width': 1.5,
+      fill: 'url(#fb-wood)', rx: 6,
+      stroke: 'rgba(40,28,18,0.6)', 'stroke-width': 2,
     }, svg);
-
-    if (posStart > 0) {
-      el('text', {
-        x: L.padL - 16, y: L.padT + 12,
-        fill: '#e3b341', 'font-size': compact ? 12 : 14, 'font-weight': 900,
-        'text-anchor': 'middle', 'font-family': 'Heebo',
-      }, svg).textContent = posStart;
-      el('line', {
-        x1: L.padL - 6, y1: L.padT, x2: L.padL + L.courseW * PAIRS + 6, y2: L.padT,
-        stroke: '#8fa6bc', 'stroke-width': 3.5,
-      }, svg);
-    } else {
-      el('line', {
-        x1: L.padL - 6, y1: L.padT, x2: L.padL + L.courseW * PAIRS + 6, y2: L.padT,
-        stroke: '#f0e8d8', 'stroke-width': compact ? 4.5 : 5.5,
-      }, svg);
-    }
 
     for (let f = 1; f <= NUM_FRETS; f++) {
       const y = L.padT + f * L.frH;
       el('line', {
         x1: L.padL, y1: y, x2: L.padL + L.courseW * PAIRS, y2: y,
-        stroke: '#5a7088', 'stroke-width': 1.5,
+        stroke: 'url(#fb-fret)', 'stroke-width': 2.5,
       }, svg);
+    }
+
+    el('rect', {
+      x: L.padL - 6, y: L.padT - 3,
+      width: L.courseW * PAIRS + 12, height: 6,
+      fill: posStart > 0 ? '#c8d4e0' : '#f5ead8', rx: 1,
+      stroke: 'rgba(120,100,80,0.5)', 'stroke-width': 0.5,
+    }, svg);
+
+    if (posStart > 0) {
+      el('text', {
+        x: L.padL - 16, y: L.padT + 4,
+        fill: '#1a1408', 'font-size': compact ? 11 : 13, 'font-weight': 900,
+        'text-anchor': 'middle', 'font-family': 'Heebo',
+      }, svg).textContent = posStart;
+    }
+
+    for (let f = 1; f <= NUM_FRETS; f++) {
+      const label = posStart + f;
       el('text', {
         x: L.padL - 14, y: L.padT + (f - 0.5) * L.frH + 5,
-        fill: '#8fa6bc', 'font-size': compact ? 10 : 12, 'font-weight': 700,
+        fill: '#9aabb8', 'font-size': compact ? 10 : 12, 'font-weight': 700,
         'text-anchor': 'middle', 'font-family': 'Heebo',
-      }, svg).textContent = String(posStart + f);
+      }, svg).textContent = String(label);
+      if ([3, 5, 7, 12].includes(label)) {
+        el('circle', {
+          cx: L.padL + (L.courseW * PAIRS) / 2,
+          cy: L.padT + (f - 0.5) * L.frH,
+          r: 3, fill: 'rgba(30,20,12,0.5)',
+        }, svg);
+      }
     }
 
     for (let c = 0; c < PAIRS; c++) {
@@ -123,8 +147,8 @@ const Fretboard = (() => {
         const x = L.stringLineX(c, side);
         el('line', {
           x1: x, y1: L.padT, x2: x, y2: L.padT + L.frH * NUM_FRETS,
-          stroke: isActive ? '#ffd86b' : '#c8d4de',
-          'stroke-width': isActive ? (compact ? 2.4 : 3) : (compact ? 1.2 : 1.5),
+          stroke: isActive ? '#ffe8a0' : '#b8c8d8',
+          'stroke-width': isActive ? (compact ? 1.8 + c * 0.3 : 2.2 + c * 0.35) : (compact ? 1 + c * 0.15 : 1.2 + c * 0.2),
         }, svg);
       }
       const cx = L.courseCenterX(c);
@@ -190,7 +214,7 @@ const Fretboard = (() => {
         const r = compact ? 9 : 11;
         el('ellipse', {
           cx, cy, rx: L.pairGap * 0.85 + 2, ry: r,
-          fill: '#e3b341', stroke: '#f0cc74', 'stroke-width': 2,
+          fill: 'url(#fb-pearl)', stroke: 'rgba(255,255,255,0.55)', 'stroke-width': 1.5,
           class: 'fb-dot',
         }, g);
         el('text', {
