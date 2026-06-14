@@ -301,10 +301,15 @@ const Highway = (() => {
     cctx.stroke();
     if (text) {
       cctx.shadowBlur = 0;
-      cctx.fillStyle = '#2a1808';
-      cctx.font = `900 ${ry > 9 ? 11 : 9}px Heebo, sans-serif`;
+      cctx.shadowOffsetY = 0;
+      cctx.fillStyle = '#1a0c04';
+      cctx.font = `900 ${ry > 10 ? 14 : 12}px Heebo, sans-serif`;
       cctx.textAlign = 'center';
       cctx.textBaseline = 'middle';
+      cctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      cctx.lineWidth = 3;
+      cctx.lineJoin = 'round';
+      cctx.strokeText(text, cx, cy + 0.5);
       cctx.fillText(text, cx, cy + 0.5);
     }
     cctx.restore();
@@ -334,22 +339,57 @@ const Highway = (() => {
     drawFingerDot(cctx, cx, cy, g.pairGap + 3, 10, String(m.fret), true);
   }
 
+  function drawLabelPill(cctx, cx, cy, lines, preferBelow) {
+    const fs = lines.map((t, i) => i === 0 ? 13 : 10);
+    let maxW = 0;
+    lines.forEach((t, i) => {
+      cctx.font = `${i === 0 ? 900 : 700} ${fs[i]}px Heebo, sans-serif`;
+      maxW = Math.max(maxW, cctx.measureText(t).width);
+    });
+    const pw = maxW + 16;
+    const ph = lines.length === 1 ? 20 : 34;
+    const below = preferBelow !== false;
+    const py = below ? cy + 15 : cy - ph - 15;
+    cctx.fillStyle = 'rgba(0,0,0,0.82)';
+    roundRect(cctx, cx - pw / 2, py, pw, ph, 5);
+    cctx.fill();
+    cctx.strokeStyle = 'rgba(240,204,116,0.75)';
+    cctx.lineWidth = 1.5;
+    cctx.stroke();
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'middle';
+    lines.forEach((t, i) => {
+      cctx.fillStyle = i === 0 ? '#ffd86b' : '#e8dcc8';
+      cctx.font = `${i === 0 ? 900 : 700} ${fs[i]}px Heebo, sans-serif`;
+      const ly = lines.length === 1 ? py + ph / 2 : py + 12 + i * 14;
+      cctx.fillText(t, cx, ly);
+    });
+  }
+
+  function approachLabels(m) {
+    const str = `מיתר ${m.courseIdx + 1} · ${STRING_HE[m.courseIdx]}`;
+    if (m.fret === 0) return ['פתוח ○', str];
+    const fretLine = `סריג ${m.fret}`;
+    if (m.label && m.label.length <= 3) return [fretLine, `${str} · ${m.label}`];
+    return [fretLine, str];
+  }
+
   function drawApproachMarker(cctx, g, m, timeToHit, pxPerSec, status) {
     const cx = g.courseCenterX(m.courseIdx);
     if (m.fret === 'x') return;
     const y = g.catchY - timeToHit * pxPerSec;
-    const lbl = m.fret === 0 ? '○' : (m.label && m.label.length <= 2 ? m.label : String(m.fret));
+    const main = m.fret === 0 ? '○' : String(m.fret);
     cctx.save();
-    if (status === 'perfect' || status === 'good') cctx.globalAlpha = 0.3;
+    if (status === 'perfect' || status === 'good') cctx.globalAlpha = 0.35;
     if (status === 'wrong' || status === 'miss') {
-      drawFingerDot(cctx, cx, y, g.pairGap + 2, 10, '!', false);
+      drawFingerDot(cctx, cx, y, g.pairGap + 3, 12, '!', false);
     } else {
-      drawFingerDot(cctx, cx, y, g.pairGap + 2, 10, lbl, false);
+      drawFingerDot(cctx, cx, y, g.pairGap + 3, 12, main, false);
     }
-    cctx.fillStyle = '#e8c878';
-    cctx.font = '700 8px Heebo, sans-serif';
-    cctx.textAlign = 'center';
-    cctx.fillText(`מ${m.courseIdx + 1}·ס${m.fret}`, cx, y - 16);
+    if (status !== 'perfect' && status !== 'good') {
+      const preferBelow = y < g.catchY - 20;
+      drawLabelPill(cctx, cx, y, approachLabels(m), preferBelow);
+    }
     cctx.restore();
   }
 
