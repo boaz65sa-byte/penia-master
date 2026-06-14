@@ -4,6 +4,7 @@ const Highway = (() => {
   const STRING_EN = ['C', 'F', 'A', 'D'];
   const NUM_FRETS = 6;
   const PAIRS = 4;
+  const LOOKAHEAD = 4.5;
   let lastGeom = null;
   let lastViewStart = 0;
 
@@ -231,9 +232,9 @@ const Highway = (() => {
 
   function drawPearlDot(cctx, cx, cy, rx, ry, text, ghost) {
     cctx.save();
-    if (ghost) cctx.globalAlpha = 0.8;
-    cctx.shadowColor = 'rgba(0,0,0,0.4)';
-    cctx.shadowBlur = ghost ? 3 : 6;
+    if (ghost) cctx.globalAlpha = 0.85;
+    cctx.shadowColor = 'rgba(0,0,0,0.45)';
+    cctx.shadowBlur = ghost ? 4 : 8;
     cctx.shadowOffsetX = 1;
     const dot = cctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, ry);
     dot.addColorStop(0, '#fff8e8');
@@ -243,13 +244,13 @@ const Highway = (() => {
     cctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     cctx.fillStyle = dot;
     cctx.fill();
-    cctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    cctx.lineWidth = 1.5;
+    cctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    cctx.lineWidth = 1.8;
     cctx.stroke();
     if (text) {
       cctx.shadowBlur = 0;
       cctx.fillStyle = '#1a0c04';
-      cctx.font = `900 ${ry > 9 ? 12 : 10}px Heebo, sans-serif`;
+      cctx.font = `900 ${ry > 10 ? 13 : 11}px Heebo, sans-serif`;
       cctx.textAlign = 'center';
       cctx.textBaseline = 'middle';
       cctx.fillText(text, cx, cy);
@@ -257,78 +258,95 @@ const Highway = (() => {
     cctx.restore();
   }
 
-  function drawLabelPill(cctx, cx, cy, lines, side) {
-    const fs = [12, 9];
-    let maxW = 0;
-    lines.forEach((t, i) => {
-      cctx.font = `${i === 0 ? 900 : 700} ${fs[i]}px Heebo, sans-serif`;
-      maxW = Math.max(maxW, cctx.measureText(t).width);
-    });
-    const pw = maxW + 14;
-    const ph = lines.length === 1 ? 18 : 30;
-    const px = side === 'left' ? cx - pw - 10 : cx + 10;
-    const py = cy - ph / 2;
-    cctx.fillStyle = 'rgba(0,0,0,0.85)';
-    roundRect(cctx, px, py, pw, ph, 4);
+  function fretColumnX(g, fret, viewStart) {
+    if (fret === 0) return g.nutX - 10;
+    return g.columnX(fret, viewStart);
+  }
+
+  function approachProgress(timeToHit) {
+    return Math.max(0, Math.min(1, 1 - timeToHit / LOOKAHEAD));
+  }
+
+  function approachX(g, m, timeToHit, viewStart) {
+    const fromX = fretColumnX(g, m.fret, viewStart);
+    const t = approachProgress(timeToHit);
+    return fromX + t * (g.catchX - fromX);
+  }
+
+  function drawGemCell(cctx, g, cx, cy, opts) {
+    const { lines, color, status, urgent } = opts;
+    const scale = urgent ? 1.12 : 1;
+    const bw = Math.max(54, g.frW * 0.95) * scale;
+    const bh = Math.max(40, g.courseStep * 0.88) * scale;
+    const x = cx - bw / 2;
+    const y = cy - bh / 2;
+    cctx.save();
+    if (status === 'perfect' || status === 'good') cctx.globalAlpha = 0.3;
+    else if (status === 'wrong' || status === 'miss') cctx.globalAlpha = 0.85;
+
+    cctx.shadowColor = color;
+    cctx.shadowBlur = status ? 0 : (urgent ? 22 : 14);
+    cctx.fillStyle = color + (status ? '22' : '55');
+    roundRect(cctx, x, y, bw, bh, 7);
     cctx.fill();
-    cctx.strokeStyle = 'rgba(240,204,116,0.7)';
-    cctx.lineWidth = 1.2;
+    cctx.strokeStyle = color;
+    cctx.lineWidth = urgent ? 3 : 2.2;
     cctx.stroke();
+    cctx.shadowBlur = 0;
+
     cctx.textAlign = 'center';
     lines.forEach((t, i) => {
-      cctx.fillStyle = i === 0 ? '#ffd86b' : '#e8dcc8';
-      cctx.font = `${i === 0 ? 900 : 700} ${fs[i]}px Heebo, sans-serif`;
-      cctx.fillText(t, px + pw / 2, py + 11 + i * 13);
-    });
-  }
-
-  function drawStaticMarker(cctx, g, m, viewStart) {
-    if (m.fret === 'x') {
-      cctx.fillStyle = '#c03030';
-      cctx.font = '900 14px Heebo, sans-serif';
-      cctx.textAlign = 'right';
+      cctx.fillStyle = i === 0 ? '#fff8e0' : '#d8e4f0';
+      cctx.font = `${i === 0 ? 900 : 700} ${i === 0 ? (urgent ? 16 : 14) : 10}px Heebo, sans-serif`;
       cctx.textBaseline = 'middle';
-      cctx.fillText('×', g.nutX - 6, g.stringCenterY(m.courseIdx));
-      return;
-    }
-    const cy = g.stringCenterY(m.courseIdx);
-    const cx = g.columnX(m.fret, viewStart);
-    if (cx < g.nutX - 5 || cx > g.gridRight) return;
-    if (m.fret === 0) {
-      cctx.strokeStyle = '#5fc88f';
-      cctx.lineWidth = 2;
-      cctx.beginPath();
-      cctx.arc(g.nutX - 4, cy, 5, 0, Math.PI * 2);
-      cctx.stroke();
-      return;
-    }
-    drawPearlDot(cctx, cx, cy, g.pairGap + 2, 9, String(m.fret), true);
+      cctx.fillText(t, cx, y + 13 + i * 14);
+    });
+    cctx.restore();
   }
 
-  function approachLabels(m) {
-    const str = `מיתר ${m.courseIdx + 1} · ${STRING_HE[m.courseIdx]}`;
-    if (m.fret === 0) return ['פתוח ○', str];
-    const fretLine = `סריג ${m.fret}`;
-    if (m.label && m.label.length <= 3) return [fretLine, `${str} · ${m.label}`];
-    return [fretLine, str];
+  function drawApproachTrail(cctx, g, fromX, cx, cy, color) {
+    if (Math.abs(cx - fromX) < 6) return;
+    cctx.save();
+    cctx.strokeStyle = color + '44';
+    cctx.lineWidth = 3;
+    cctx.setLineDash([4, 5]);
+    cctx.beginPath();
+    cctx.moveTo(fromX, cy);
+    cctx.lineTo(cx - 8, cy);
+    cctx.stroke();
+    cctx.restore();
   }
 
-  function drawApproachMarker(cctx, g, m, timeToHit, pxPerSec, status) {
+  function gemLines(m, tg, gameType) {
+    if (gameType === 'note') {
+      const note = tg.note || {};
+      const top = note.label || note.solfege || (m.fret === 0 ? '○' : String(m.fret));
+      return [top, `סריג ${m.fret} · מ${m.courseIdx + 1}`];
+    }
+    const top = m.label || (m.fret === 0 ? '○' : String(m.fret));
+    return [top, `מ${m.courseIdx + 1} · ${STRING_HE[m.courseIdx]}`];
+  }
+
+  function drawApproachMarker(cctx, g, m, timeToHit, viewStart, tg, gameType, status) {
     if (m.fret === 'x') return;
     const cy = g.stringCenterY(m.courseIdx);
-    const cx = g.catchX - timeToHit * pxPerSec;
-    const main = m.fret === 0 ? '○' : String(m.fret);
-    cctx.save();
-    if (status === 'perfect' || status === 'good') cctx.globalAlpha = 0.35;
+    const fromX = fretColumnX(g, m.fret, viewStart);
+    const cx = approachX(g, m, timeToHit, viewStart);
+    const urgent = timeToHit < 0.55;
+    const color = gameType === 'chord' ? '#e3b341' : '#4fb3d9';
+
     if (status === 'wrong' || status === 'miss') {
-      drawPearlDot(cctx, cx, cy, g.pairGap + 2, 10, '!', false);
-    } else {
-      drawPearlDot(cctx, cx, cy, g.pairGap + 2, 10, main, false);
-      if (status !== 'perfect' && status !== 'good') {
-        drawLabelPill(cctx, cx, cy, approachLabels(m), cx > g.w * 0.55 ? 'left' : 'right');
-      }
+      drawGemCell(cctx, g, cx, cy, { lines: ['!', 'פספוס'], color: '#d96459', status, urgent });
+      return;
     }
-    cctx.restore();
+
+    drawApproachTrail(cctx, g, fromX, cx, cy, color);
+    drawGemCell(cctx, g, cx, cy, {
+      lines: gemLines(m, tg, gameType),
+      color,
+      status,
+      urgent,
+    });
   }
 
   function noteMarkers(note) {
@@ -338,7 +356,7 @@ const Highway = (() => {
   function chordMarkers(chordId) {
     const ch = getChord(chordId);
     if (!ch) return [];
-    return ch.shape.map((f, i) => ({ courseIdx: i, fret: f, label: '' }));
+    return ch.shape.map((f, i) => ({ courseIdx: i, fret: f, label: i === 0 ? chordId : '' }));
   }
 
   function activeCoursesForTarget(tg, gameType) {
@@ -399,11 +417,6 @@ const Highway = (() => {
     drawStrings(cctx, g, active);
     drawStringLabels(cctx, g, active);
 
-    if (upcoming) {
-      const shape = gameType === 'note' ? noteMarkers(upcoming.note) : chordMarkers(upcoming.chordId);
-      shape.forEach(m => drawStaticMarker(cctx, g, m, viewStart));
-    }
-
     drawCatchZone(cctx, g);
 
     if (clickHint) {
@@ -429,10 +442,9 @@ const Highway = (() => {
 
     for (const tg of targets) {
       const timeToHit = tg.t - tNow;
-      if (timeToHit < -0.4) continue;
-      if (timeToHit * pxPerSec > g.catchX - g.nutX + 60) continue;
+      if (timeToHit < -0.45 || timeToHit > LOOKAHEAD + 0.35) continue;
       const markers = gameType === 'note' ? noteMarkers(tg.note) : chordMarkers(tg.chordId);
-      markers.forEach(m => drawApproachMarker(cctx, g, m, timeToHit, pxPerSec, tg.status));
+      markers.forEach(m => drawApproachMarker(cctx, g, m, timeToHit, viewStart, tg, gameType, tg.status));
     }
 
     return g;
