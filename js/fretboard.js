@@ -48,7 +48,7 @@ const Fretboard = (() => {
     const padT = compact ? 20 : 26;
     const nutX = padL + 4;
     const w = padL + frW * NUM_FRETS + 20;
-    const h = padT + courseStep * 3 + 10;
+    const h = padT + courseStep * 3.42 + 12;
 
     function stringCenterY(course) {
       return padT + course * courseStep + courseStep * 0.42;
@@ -80,7 +80,7 @@ const Fretboard = (() => {
     const L = layout(compact);
     const onCellClick = opts.onCellClick;
     const activeCourse = opts.activeCourseIdx != null ? opts.activeCourseIdx : opts.activeStringIdx;
-    const gridBot = L.padT + L.courseStep * 3 + 4;
+    const gridBot = L.padT + L.courseStep * 3.42 + 4;
 
     const svg = el('svg', {
       viewBox: `0 0 ${L.w} ${L.h}`,
