@@ -58,9 +58,9 @@ const Highway = (() => {
 
     const gridBot = gridTop + gridH;
 
-    const courseStep = gridH / 3.42;
+    const courseStep = gridH / 3;
 
-    const pairGap = Math.min(6, courseStep * 0.2);
+    const pairGap = Math.min(6, courseStep * 0.18);
 
     const soundCX = bodyW * 0.52;
 
@@ -72,7 +72,7 @@ const Highway = (() => {
 
     function stringCenterY(course) {
 
-      return gridTop + course * courseStep + courseStep * 0.42;
+      return gridTop + course * (gridH / 3);
 
     }
 

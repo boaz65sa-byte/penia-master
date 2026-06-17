@@ -762,11 +762,12 @@ button, input, select {
 }
 .fb-wrap-compact.fb-wrap-real { max-width: min(240px, 88vw); padding: 6px 8px 2px; }
 .fb-svg.real-fretboard { display: block; width: 100%; height: auto; }
-.fb-marker .fb-dot { transition: filter 0.2s, transform 0.2s; }
+.fb-marker .fb-dot { transition: filter 0.2s; }
 .fb-marker.active .fb-dot {
   fill: #ffd86b;
-  filter: drop-shadow(0 0 12px rgba(255,216,107,0.95));
-  transform: scale(1.08);
+  stroke: #fff8d0;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 10px rgba(255,216,107,0.95));
 }
 .fb-marker.pulse .fb-dot { animation: learnPulse 0.9s ease infinite; }
 .chord-fb-host { display: flex; justify-content: center; }
